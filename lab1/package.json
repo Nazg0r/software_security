@@ -1,0 +1,23 @@
+{
+  "name": "software_security",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "app1": "node ./basic_auth/index.js",
+    "app2": "node ./forms_auth/index.js",
+    "app3": "node ./token_auth/index.js",
+    "app4": "node ./jwt_token_auth/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "on-finished": "^2.4.1",
+    "uuid": "^13.0.0"
+  }
+}
