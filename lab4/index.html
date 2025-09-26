@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login</title>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    </head>
+
+    <body>
+        <main id="main-holder">
+            <a href="/logout" id="logout">Logout</a>
+
+            <h1 class="title">Login</h1>
+
+            <div class="login-error-msg-holder">
+                <p class="login-error-msg">Invalid username <span id="error-msg-second-line">and/or password</span></p>
+            </div>
+
+            <div class="login-error-msg-holder">
+                <p class="register-error-msg ">Passwords do not match</p>
+            </div>
+
+            <form class="login-form active_form" action="/api/login" method="post">
+                <input type="text" name="login" id="username-field" class="login-form-field" placeholder="Username">
+                <input type="password" name="password" id="password-field" class="login-form-field" placeholder="Password">
+                <input type="submit" value="Login" id="login-form-submit">
+            </form>
+
+            <form class="register-form" action="/api/login" method="post">
+                <input type="text" name="login" id="register-username" class="password-form-field" placeholder="Email">
+                <input type="password" name="password" id="register-password" class="password-form-field" placeholder="Password">
+                <input type="password" name="confirmPassword" id="register-confirm-password" class="password-form-field" placeholder="Confirm password">
+                <input type="submit" value="Register" id="register-form-submit">
+            </form>
+
+            <a class="form_switcher" href="#">Don`t have an account?</a>
+        </main>
+    </body>
+
+
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            display: grid;
+            justify-items: center;
+            align-items: center;
+            background-color: #3a3a3a;
+        }
+
+        #logout {
+            opacity: 0;
+        }
+
+        #main-holder {
+            width: 50%;
+            height: 70%;
+            display: grid;
+            justify-items: center;
+            align-items: center;
+            background-color: white;
+            border-radius: 7px;
+            box-shadow: 0px 0px 5px 2px black;
+        }
+
+        .login-error-msg-holder {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .login-error-msg, .register-error-msg {
+            width: 23%;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #8a0000;
+            border: 1px solid #8a0000;
+            background-color: #e58f8f;
+            opacity: 0;
+        }
+
+        #error-msg-second-line {
+            display: block;
+        }
+
+        .login-form, .register-form {
+            align-self: flex-start;
+            display: none;
+            flex-direction: column;
+            gap: 0.25rem;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .active_form {
+          display: flex;
+        }
+
+        .login-form-field::placeholder,
+        .password-form-field::placeholder {
+            color: #3a3a3a;
+        }
+
+        .login-form-field, .password-form-field {
+            border: none;
+            border-bottom: 1px solid #3a3a3a;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            outline: none;
+            padding: 0px 0px 5px 5px;
+        }
+
+        #login-form-submit,
+        #register-form-submit {
+            width: 100%;
+            padding: 7px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            background-color: #3a3a3a;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .form_switcher {
+          display: block;
+          text-align: center;
+          padding: 2rem;
+        }
+    </style>
+
+    <script>
+        const session = sessionStorage.getItem('session');
+
+        let access_token;
+        let refresh_token;
+
+        try {
+            access_token = JSON.parse(session).access_token;
+            refresh_token = JSON.parse(session).refresh_token;
+        } catch(e) {}
+
+
+        if (access_token) {
+
+            if (isTokenExpired(access_token) && refresh_token) {
+                console.log("Sending refresh request");
+                axios({
+                    method: 'post',
+                    url: 'api/refresh',
+                    data: {
+                        refresh_token: refresh_token
+                    }
+                }).then((response) => {
+                    console.log("token refreshed ")
+                    sessionStorage.setItem('session', JSON.stringify(response.data));
+                    location.reload();
+                })
+            }
+
+            axios.get('/', {
+                headers: {
+                    Authorization: 'Bearer ' + access_token
+                }
+            }).then((response) => {
+                const { username } = response.data;
+
+                if (username) {
+                    const mainHolder = document.getElementById("main-holder");
+
+                    loginForm.remove();
+                    loginErrorMsg.remove();
+                    pageTitle.remove();
+                    switchFormLink.remove();
+
+                    mainHolder.append(`Hello ${username}`);
+                    logoutLink.style.opacity = 1;
+                }
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
+
+        const loginForm = document.querySelector(".login-form");
+        const registerForm = document.querySelector(".register-form");
+        const loginButton = document.getElementById("login-form-submit");
+        const registerButton = document.getElementById("register-form-submit");
+        const loginErrorMsg = document.querySelector(".login-error-msg");
+        const registerErrorMsg = document.querySelector(".register-error-msg");
+        const logoutLink =  document.getElementById("logout");
+        const switchFormLink = document.querySelector('.form_switcher');
+        const pageTitle = document.querySelector(".title");
+
+        logoutLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('session');
+            location.reload();
+        });
+
+        loginButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            const login = loginForm.login.value;
+            const password = loginForm.password.value;
+
+
+            axios({
+                method: 'post',
+                url: '/api/login',
+                data: {
+                    login,
+                    password
+                }
+            }).then((response) => {
+                sessionStorage.setItem('session', JSON.stringify(response.data));
+                location.reload();
+            }).catch(() => {
+                loginErrorMsg.style.opacity = 1;
+            });
+        });
+
+        switchFormLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            switchFormType();
+        });
+
+        registerButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            const email = registerForm.login.value;
+            const password = registerForm.password.value;
+            const confirmPassword = registerForm.confirmPassword.value;
+
+            if (password !== confirmPassword) {
+                registerErrorMsg.style.opacity = 1;
+                return;
+            }
+
+            axios({
+                method: 'post',
+                url: '/api/register',
+                data: {
+                    email,
+                    password
+                }
+            }).then(() => {
+                switchFormType();
+            }).catch((err) => {
+                console.log(err)
+            });
+        })
+
+        function switchFormType() {
+            switchFormLink.textContent === 'Don`t have an account?' ?
+                switchFormLink.textContent = 'Login' :
+                switchFormLink.textContent = 'Don`t have an account?';
+
+            pageTitle.textContent === 'Login' ?
+                pageTitle.textContent = 'Register' :
+                pageTitle.textContent = 'Login';
+
+            loginForm.classList.toggle('active_form');
+            registerForm.classList.toggle('active_form');
+        }
+
+        function isTokenExpired(token) {
+            const payload = getJsonPayloadFromToken(token);
+            const currentTime = Math.round(new Date().getTime() / 1000);
+            console.log(payload.exp);
+            console.log(currentTime);
+            return payload.exp < currentTime;
+        }
+
+        function getJsonPayloadFromToken(token) {
+            const parts = token.split('.');
+            return JSON.parse(base64UrlDecode(parts[1]));
+        }
+
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, "+").replace(/_/g, "/");
+            while (str.length % 4) str += "=";
+            const decoded = atob(str);
+            return decodeURIComponent(
+                decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+            );
+        }
+    </script>
+</html>

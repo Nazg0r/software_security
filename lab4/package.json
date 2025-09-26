@@ -1,0 +1,21 @@
+{
+  "name": "lab4",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "app": "node ."
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-oauth2-jwt-bearer": "^1.7.1",
+    "express-openid-connect": "^2.19.2",
+    "on-finished": "^2.4.1",
+    "uuid": "^13.0.0"
+  }
+}
