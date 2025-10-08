@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login</title>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    </head>
+
+    <body>
+        <main id="main-holder">
+            <a href="/logout" id="logout">Logout</a>
+
+        </main>
+    </body>
+
+
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            display: grid;
+            justify-items: center;
+            align-items: center;
+            background-color: #3a3a3a;
+        }
+
+        #logout {
+            opacity: 0;
+        }
+
+        #main-holder {
+            width: 50%;
+            height: 70%;
+            display: grid;
+            justify-items: center;
+            align-items: center;
+            background-color: white;
+            border-radius: 7px;
+            box-shadow: 0px 0px 5px 2px black;
+        }
+    </style>
+
+    <script>
+        const session = sessionStorage.getItem('session');
+
+        let access_token;
+        let refresh_token;
+
+        try {
+            access_token = JSON.parse(session).access_token;
+            refresh_token = JSON.parse(session).refresh_token;
+        } catch(e) {}
+
+
+        if (access_token) {
+
+            if (isTokenExpired(access_token) && refresh_token) {
+                console.log("Sending refresh request");
+                axios({
+                    method: 'post',
+                    url: 'api/refresh',
+                    data: {
+                        refresh_token: refresh_token
+                    }
+                }).then((response) => {
+                    console.log("token refreshed ")
+                    sessionStorage.setItem('session', JSON.stringify(response.data));
+                    location.reload();
+                })
+            }
+
+            axios.get('/', {
+                headers: {
+                    Authorization: 'Bearer ' + access_token,
+                    Accept: 'application/json'
+                }
+            }).then((response) => {
+                const { username } = response.data;
+
+                if (username) {
+                    const mainHolder = document.getElementById("main-holder");
+
+                    mainHolder.append(`Hello ${username}`);
+                    logoutLink.style.opacity = 1;
+                }
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
+
+        const logoutLink =  document.getElementById("logout");
+
+        logoutLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('session');
+            window.location.href = '/api/logout';
+        });
+
+        loginButton.addEventListener("click", (e) => {
+            e.preventDefault();
+
+            axios({
+                method: 'get',
+                url: '/api/login',
+            }).then((response) => {
+                sessionStorage.setItem('session', JSON.stringify(response.data));
+                location.reload();
+            });
+        });
+
+        function isTokenExpired(token) {
+            const payload = getJsonPayloadFromToken(token);
+            const currentTime = Math.round(new Date().getTime() / 1000);
+            console.log(payload.exp);
+            console.log(currentTime);
+            return payload.exp < currentTime;
+        }
+
+        function getJsonPayloadFromToken(token) {
+            const parts = token.split('.');
+            return JSON.parse(base64UrlDecode(parts[1]));
+        }
+
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, "+").replace(/_/g, "/");
+            while (str.length % 4) str += "=";
+            const decoded = atob(str);
+            return decodeURIComponent(
+                decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+            );
+        }
+    </script>
+</html>
